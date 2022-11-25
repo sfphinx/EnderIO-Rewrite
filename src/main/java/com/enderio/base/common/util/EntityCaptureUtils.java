@@ -61,8 +61,10 @@ public class EntityCaptureUtils {
         if (!type.canSerialize() || type.getCategory() == MobCategory.MISC)
             return CapturableStatus.INCOMPATIBLE;
 
-        if (BaseConfig.COMMON.ITEMS.SOUL_VIAL_BLACKLIST.get().contains(ForgeRegistries.ENTITY_TYPES.getKey(type).toString()))
-            return CapturableStatus.BLACKLISTED;
+        // TODO: having the blacklist in the config makes this not usable for data generation
+
+        //if (BaseConfig.COMMON.ITEMS.SOUL_VIAL_BLACKLIST.get().contains(ForgeRegistries.ENTITY_TYPES.getKey(type).toString()))
+        //    return CapturableStatus.BLACKLISTED;
 
         return CapturableStatus.CAPTURABLE;
     }

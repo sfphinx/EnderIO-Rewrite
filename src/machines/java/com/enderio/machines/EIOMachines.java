@@ -25,7 +25,7 @@ public class EIOMachines {
         ctx.registerConfig(ModConfig.Type.COMMON, MachinesConfig.COMMON_SPEC, "enderio/machines-common.toml");
         ctx.registerConfig(ModConfig.Type.CLIENT, MachinesConfig.CLIENT_SPEC, "enderio/machines-client.toml");
 
-        // Perform classloads for everything so things are registered.
+        // Perform class loads for everything so things are registered.
         MachineBlocks.register();
         MachineBlockEntities.register();
         MachineMenus.register();
@@ -41,5 +41,6 @@ public class EIOMachines {
         generator.addProvider(event.includeServer(), new EnchanterRecipeProvider(generator));
         generator.addProvider(event.includeServer(), new SagMillRecipeProvider(generator));
         generator.addProvider(event.includeServer(), new SlicingRecipeProvider(generator));
+        generator.addProvider(event.includeServer(), new SoulBindingRecipeProvider(generator));
     }
 }

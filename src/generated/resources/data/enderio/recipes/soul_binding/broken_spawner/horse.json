@@ -1,0 +1,14 @@
+{
+  "type": "enderio:soul_binding",
+  "energy": 5000,
+  "entity": "minecraft:horse",
+  "inputs": [
+    {
+      "item": "enderio:broken_spawner"
+    },
+    {
+      "item": "enderio:filled_soul_vial"
+    }
+  ],
+  "output": "enderio:broken_spawner"
+}

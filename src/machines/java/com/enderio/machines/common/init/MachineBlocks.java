@@ -124,6 +124,10 @@ public class MachineBlocks {
         .lang("Impulse Hopper")
         .register();
 
+    public static final BlockEntry<ProgressMachineBlock> SOUL_BINDER = soulMachine("soul_binder", () -> MachineBlockEntities.SOUL_BINDER)
+        .lang("Soul Binder")
+        .register();
+
     private static BlockBuilder<ProgressMachineBlock, Registrate> standardMachine(String name, Supplier<BlockEntityEntry<? extends MachineBlockEntity>> blockEntityEntry) {
         return REGISTRATE
             .block(name, props -> new ProgressMachineBlock(props, blockEntityEntry.get()))

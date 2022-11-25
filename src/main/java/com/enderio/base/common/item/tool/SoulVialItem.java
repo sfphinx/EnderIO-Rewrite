@@ -243,6 +243,12 @@ public class SoulVialItem extends Item implements IMultiCapabilityItem, IAdvance
             );
     }
 
+    public static ItemStack forType(ResourceLocation type) {
+        ItemStack soulVial = new ItemStack(EIOItems.FILLED_SOUL_VIAL.get());
+        setEntityType(soulVial, type);
+        return soulVial;
+    }
+
     @Nullable
     @Override
     public MultiCapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundTag nbt, MultiCapabilityProvider provider) {
@@ -288,7 +294,7 @@ public class SoulVialItem extends Item implements IMultiCapabilityItem, IAdvance
             for (LivingEntity livingentity : source.getLevel().getEntitiesOfClass(LivingEntity.class, new AABB(blockpos), living -> !(living instanceof Player))) {
                 AtomicReference<ItemStack> filledVial = new AtomicReference<>();
                 if (catchEntity(stack, livingentity, filledVial::set, component -> {}) == InteractionResult.SUCCESS && filledVial.get() != null) {
-                    //push filledvial back into dispenser
+                    //push filled vial back into dispenser
                     source.getEntity().getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(handler -> {
                         for (int i = 0; i < handler.getSlots(); i++) {
                             if (handler.insertItem(i, filledVial.get(), true).isEmpty()) {
