@@ -18,5 +18,7 @@ public class MachineLang {
 
     public static final Component TOOLTIP_ENERGY_EQUIVALENCE = REGISTRATE.addLang("gui", EnderIO.loc("energy_equivalence"), "A unit of energy, equivalent to FE.");
 
+    public static final Component USE_PLAYER_XP = REGISTRATE.addLang("gui", EnderIO.loc("use_player_xp"), "Use Player XP");
+
     public static void register() {}
 }

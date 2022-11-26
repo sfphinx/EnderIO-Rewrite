@@ -1,12 +1,11 @@
 package com.enderio.machines.common.recipe;
 
 import com.enderio.EnderIO;
-import com.enderio.api.capability.StoredEntityData;
+import com.enderio.api.capability.IEntityStorage;
 import com.enderio.base.common.init.EIOCapabilities;
-import com.enderio.base.common.init.EIOItems;
-import com.enderio.core.common.recipes.CountedIngredient;
 import com.enderio.core.common.recipes.OutputStack;
 import com.enderio.machines.common.init.MachineRecipes;
+import com.enderio.machines.common.menu.SoulBinderMenu;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -19,6 +18,9 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.fluids.capability.templates.FluidTank;
 import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.wrapper.RecipeWrapper;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -33,14 +35,16 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
     private final Item output;
     private final List<Ingredient> inputs;
     private final int energy;
-    private final ResourceLocation entity;
+    private final ResourceLocation entityType;
+    private final int experience;
 
-    public SoulBindingRecipe(ResourceLocation id, Item output, List<Ingredient> inputs, ResourceLocation entity, int energy) {
+    public SoulBindingRecipe(ResourceLocation id, Item output, List<Ingredient> inputs, ResourceLocation entityType, int energy, int experience) {
         this.id = id;
         this.output = output;
         this.inputs = inputs;
         this.energy = energy;
-        this.entity = entity;
+        this.entityType = entityType;
+        this.experience = experience;
     }
 
     @Override
@@ -48,32 +52,62 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
         return energy;
     }
 
+    public int getExperienceCost() { return experience; }
+
     public List<OutputStack> craft(SoulBindingRecipe.Container container) {
-        return getResultStacks();
+        ItemStack filledSoulVial = container.getItem(SoulBinderMenu.FILLED_SOUL_VIAL_INPUT_SLOT);
+
+        List<OutputStack> results = getResultStacks();
+
+        for (int i = 0; i < results.size(); i++) {
+            int finalI = i;
+            filledSoulVial.getCapability(EIOCapabilities.ENTITY_STORAGE).ifPresent(inputEntity -> {
+                results.get(finalI).getItem().getCapability(EIOCapabilities.ENTITY_STORAGE).ifPresent(resultEntity -> {
+                    resultEntity.setStoredEntityData(inputEntity.getStoredEntityData());
+                });
+            });
+        }
+
+        return results;
     }
 
     @Override
     public List<OutputStack> getResultStacks() {
-        ItemStack result = new ItemStack(output, 1);
-
-        EnderIO.LOGGER.info("getResultStacks(): entity: {}", entity.toString());
-
-        result
-            .getCapability(EIOCapabilities.ENTITY_STORAGE)
-            .ifPresent(storage ->
-                storage.setStoredEntityData(StoredEntityData.of(entity))
-            );
-
-        return List.of(OutputStack.of(result));
+        return List.of(OutputStack.of(new ItemStack(output, 1)));
     }
 
     @Override
-    public boolean matches(Container pContainer, Level pLevel) {
+    public boolean matches(Container container, Level level) {
+        // Test Items in Slots
         for (int i = 0; i < inputs.size(); i++) {
-            if (!inputs.get(i).test(pContainer.getItem(i)))
+            if (!inputs.get(i).test(container.getItem(i))) {
+                EnderIO.LOGGER.debug("soul binding - matches - FALSE");
                 return false;
+            }
         }
-        return true;
+
+        // Test if there's enough experience
+        // TODO: re-enable once the XP is figured out
+        /*
+        if (container.getFluidTank().drain(experience, IFluidHandler.FluidAction.SIMULATE).getAmount() < experience) {
+            EnderIO.LOGGER.debug("soul binding - not enough experience - FALSE");
+            return false;
+        }
+        */
+
+
+        LazyOptional<IEntityStorage> capability = container.getItem(SoulBinderMenu.FILLED_SOUL_VIAL_INPUT_SLOT).getCapability(EIOCapabilities.ENTITY_STORAGE);
+        if (!capability.isPresent()) {
+            return false;
+        }
+
+        // TODO: address get warnings?
+        IEntityStorage storage = capability.resolve().get();
+        if (storage.hasStoredEntity() && storage.getStoredEntityData().getEntityType().get().equals(entityType)) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override
@@ -96,19 +130,13 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
      * This acts as additional context.
      */
     public static class Container extends RecipeWrapper {
-        private int inputsTaken;
-
-        public Container(IItemHandlerModifiable inv) {
+        public final FluidTank fluidTank;
+        public Container(IItemHandlerModifiable inv, FluidTank fluidTank) {
             super(inv);
+            this.fluidTank = fluidTank;
         }
 
-        public int getInputsTaken() {
-            return inputsTaken;
-        }
-
-        public void setInputsTaken(int inputsTaken) {
-            this.inputsTaken = inputsTaken;
-        }
+        public FluidTank getFluidTank() { return fluidTank; }
     }
 
     public static class Serializer implements RecipeSerializer<SoulBindingRecipe> {
@@ -129,12 +157,11 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
             }
 
             int energy = serializedRecipe.get("energy").getAsInt();
+            int experience = serializedRecipe.get("experience").getAsInt();
 
-            ResourceLocation entity = new ResourceLocation(serializedRecipe.get("entity").getAsString());
+            ResourceLocation entityType = new ResourceLocation(serializedRecipe.get("entityType").getAsString());
 
-            EnderIO.LOGGER.info("fromJson: entity: {}", entity.toString());
-
-            return new SoulBindingRecipe(recipeId, output, inputs, entity, energy);
+            return new SoulBindingRecipe(recipeId, output, inputs, entityType, energy, experience);
         }
 
         @Nullable
@@ -151,10 +178,11 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
                 List<Ingredient> inputs = buffer.readCollection(ArrayList::new, Ingredient::fromNetwork);
 
                 int energy = buffer.readInt();
+                int experience = buffer.readInt();
 
-                ResourceLocation entity = buffer.readResourceLocation();
+                ResourceLocation entityType = buffer.readResourceLocation();
 
-                return new SoulBindingRecipe(recipeId, output, inputs, entity, energy);
+                return new SoulBindingRecipe(recipeId, output, inputs, entityType, energy, experience);
             } catch (Exception ex) {
                 EnderIO.LOGGER.error("Error reading soul binding recipe from packet.", ex);
                 throw ex;
@@ -167,7 +195,8 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
                 buffer.writeResourceLocation(Objects.requireNonNull(ForgeRegistries.ITEMS.getKey(recipe.output)));
                 buffer.writeCollection(recipe.inputs, (buf, ing) -> ing.toNetwork(buf));
                 buffer.writeInt(recipe.energy);
-                buffer.writeResourceLocation(recipe.entity);
+                buffer.writeInt(recipe.experience);
+                buffer.writeResourceLocation(recipe.entityType);
             } catch (Exception ex) {
                 EnderIO.LOGGER.error("Error writing soul binding recipe to packet.", ex);
                 throw ex;

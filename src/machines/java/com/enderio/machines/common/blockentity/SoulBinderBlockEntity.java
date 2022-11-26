@@ -3,9 +3,12 @@ package com.enderio.machines.common.blockentity;
 import com.enderio.EnderIO;
 import com.enderio.api.capacitor.CapacitorModifier;
 import com.enderio.api.capacitor.QuadraticScalable;
+import com.enderio.base.common.init.EIOFluids;
 import com.enderio.base.common.item.misc.BrokenSpawnerItem;
 import com.enderio.base.common.item.tool.SoulVialItem;
 import com.enderio.base.common.tag.EIOTags;
+import com.enderio.core.common.sync.IntegerDataSlot;
+import com.enderio.core.common.sync.SyncMode;
 import com.enderio.machines.common.blockentity.base.PoweredCraftingMachine;
 import com.enderio.machines.common.blockentity.task.PoweredCraftingTask;
 import com.enderio.machines.common.init.MachineRecipes;
@@ -20,7 +23,10 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.templates.FluidTank;
+import net.minecraftforge.items.wrapper.RecipeWrapper;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -39,12 +45,30 @@ public class SoulBinderBlockEntity extends PoweredCraftingMachine<SoulBindingRec
 
         // Create the crafting inventory. Used for context in the vanilla recipe wrapper.
         fluidTank = new FluidTank(1000, f -> f.getFluid().is(EIOTags.Fluids.EXPERIENCE));
-        container = new SoulBindingRecipe.Container(getInventory());
+        container = new SoulBindingRecipe.Container(getInventory(), fluidTank);
+
+        // TODO: should this be in the recipe per mob type?
+        neededXP = 2;
+
+        addDataSlot(new IntegerDataSlot(() -> fluidTank.getFluidInTank(0).getAmount(),
+            (i) -> fluidTank.setFluid(new FluidStack(EIOFluids.XP_JUICE.get(), i)),
+            SyncMode.WORLD));
+
+        addDataSlot(new IntegerDataSlot(() -> neededXP,
+            (i) -> neededXP = i,
+            SyncMode.GUI));
     }
 
     @Override
     public MachineInventoryLayout getInventoryLayout() {
-        return MachineInventoryLayout.builder().inputSlot(this::validBrokenSpawner).inputSlot(this::validFilledSoulVial).outputSlot(2).capacitor().build();
+        return MachineInventoryLayout.builder()
+            .setStackLimit(1)
+            .inputSlot(this::validBrokenSpawner)
+            .inputSlot(this::validFilledSoulVial)
+            .setStackLimit(64)
+            .outputSlot(2)
+            .capacitor()
+            .build();
     }
 
     private boolean validBrokenSpawner(int slot, ItemStack stack) {
@@ -61,29 +85,20 @@ public class SoulBinderBlockEntity extends PoweredCraftingMachine<SoulBindingRec
         return false;
     }
 
-    protected boolean acceptSlotInput(int slot, ItemStack stack) {
-        // Ensure we don't break automation by inserting items that'll break the current recipe.
-        var currentTask = getCurrentTask();
-        if (currentTask != null) {
-            var currentRecipe = currentTask.getRecipe();
-            if (currentRecipe != null) {
-                MachineInventory inventory = getInventory();
-                ItemStack currentContents = inventory.getStackInSlot(slot);
-                inventory.setStackInSlot(slot, stack);
-                boolean accept = currentRecipe.matches(container, level);
-                inventory.setStackInSlot(slot, currentContents);
-                return accept;
-            }
-        }
-        return true;
-    }
-
     public FluidTank getFluidTank() {
         return fluidTank;
     }
 
     public int getNeededXP() {
         return neededXP;
+    }
+
+    public void usePlayerExperience() {
+
+    }
+
+    public boolean needsXP() {
+        return false;
     }
 
     @Override
@@ -98,14 +113,16 @@ public class SoulBinderBlockEntity extends PoweredCraftingMachine<SoulBindingRec
 
     @Override
     protected PoweredCraftingTask<SoulBindingRecipe, SoulBindingRecipe.Container> createTask(@Nullable SoulBindingRecipe recipe) {
-        return new PoweredCraftingTask<>(this, getContainer(), 3, recipe) {
+        return new PoweredCraftingTask<>(this, getContainer(), SoulBinderMenu.BROKEN_SPAWNER_OUTPUT_SLOT, recipe) {
             @Override
             protected void takeInputs(SoulBindingRecipe recipe) {
                 // Deduct ingredients
                 MachineInventory inv = getInventory();
-                for (int i = 0; i < 2; i++) {
-                    inv.getStackInSlot(i).shrink(1);
-                }
+                inv.getStackInSlot(SoulBinderMenu.BROKEN_SPAWNER_INPUT_SLOT).shrink(1);
+                inv.getStackInSlot(SoulBinderMenu.FILLED_SOUL_VIAL_INPUT_SLOT).shrink(1);
+
+                // Deduct from Experience Bank in the Machine
+                fluidTank.drain(recipe.getExperienceCost(), IFluidHandler.FluidAction.EXECUTE);
             }
         };
     }

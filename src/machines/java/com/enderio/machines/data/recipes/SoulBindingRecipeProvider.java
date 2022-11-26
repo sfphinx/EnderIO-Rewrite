@@ -30,13 +30,13 @@ public class SoulBindingRecipeProvider extends EnderRecipeProvider {
         for (ResourceLocation entity : EntityCaptureUtils.getCapturableEntities()) {
             build(EIOItems.BROKEN_SPAWNER.get(), List.of(
                 Ingredient.of(EIOItems.BROKEN_SPAWNER.get()), Ingredient.of(EIOItems.FILLED_SOUL_VIAL.get())
-            ), entity,5000, pFinishedRecipeConsumer);
+            ), entity,100000, 10, pFinishedRecipeConsumer);
         }
     }
 
-    protected void build(Item output, List<Ingredient> inputs, ResourceLocation entity, int energy, Consumer<FinishedRecipe> finishedRecipeConsumer) {
+    protected void build(Item output, List<Ingredient> inputs, ResourceLocation entity, int energy, int experience, Consumer<FinishedRecipe> finishedRecipeConsumer) {
         // TODO: do not like the replace function being used
-        finishedRecipeConsumer.accept(new FinishedSoulBindingRecipe(EnderIO.loc("soul_binding/" + ForgeRegistries.ITEMS.getKey(output).getPath() + "/" + entity.getPath().replace(":", "_")), output, inputs, entity, energy));
+        finishedRecipeConsumer.accept(new FinishedSoulBindingRecipe(EnderIO.loc("soul_binding/" + ForgeRegistries.ITEMS.getKey(output).getPath() + "/" + entity.getPath().replace(":", "_")), output, inputs, entity, energy, experience));
     }
 
     protected static class FinishedSoulBindingRecipe extends EnderFinishedRecipe {
@@ -44,14 +44,16 @@ public class SoulBindingRecipeProvider extends EnderRecipeProvider {
         private final Item output;
         private final List<Ingredient> inputs;
         private final int energy;
-        private final ResourceLocation entity;
+        private final ResourceLocation entityType;
+        private final int experience;
 
-        public FinishedSoulBindingRecipe(ResourceLocation id, Item output, List<Ingredient> inputs, ResourceLocation entity, int energy) {
+        public FinishedSoulBindingRecipe(ResourceLocation id, Item output, List<Ingredient> inputs, ResourceLocation entityType, int energy, int experience) {
             super(id);
             this.output = output;
             this.inputs = inputs;
             this.energy = energy;
-            this.entity = entity;
+            this.entityType = entityType;
+            this.experience = experience;
         }
 
         @Override
@@ -64,7 +66,8 @@ public class SoulBindingRecipeProvider extends EnderRecipeProvider {
             }
             json.add("inputs", inputsArray);
             json.addProperty("energy", energy);
-            json.addProperty("entity", entity.toString());
+            json.addProperty("entityType", entityType.toString());
+            json.addProperty("experience", experience);
 
             super.serializeRecipeData(json);
         }
