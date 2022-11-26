@@ -113,7 +113,7 @@ public class SoulBinderBlockEntity extends PoweredCraftingMachine<SoulBindingRec
 
     @Override
     protected PoweredCraftingTask<SoulBindingRecipe, SoulBindingRecipe.Container> createTask(@Nullable SoulBindingRecipe recipe) {
-        return new PoweredCraftingTask<>(this, getContainer(), SoulBinderMenu.BROKEN_SPAWNER_OUTPUT_SLOT, recipe) {
+        return new PoweredCraftingTask<>(this, getContainer(), SoulBinderMenu.BROKEN_SPAWNER_OUTPUT_SLOT, 2, recipe) {
             @Override
             protected void takeInputs(SoulBindingRecipe recipe) {
                 // Deduct ingredients

@@ -1,0 +1,15 @@
+{
+  "type": "enderio:soul_binding",
+  "energy": 100000,
+  "entityType": "minecraft:vex",
+  "experience": 10,
+  "inputs": [
+    {
+      "item": "enderio:broken_spawner"
+    },
+    {
+      "item": "enderio:filled_soul_vial"
+    }
+  ],
+  "outputs": []
+}

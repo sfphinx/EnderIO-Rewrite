@@ -3,6 +3,8 @@ package com.enderio.machines.common.recipe;
 import com.enderio.EnderIO;
 import com.enderio.api.capability.IEntityStorage;
 import com.enderio.base.common.init.EIOCapabilities;
+import com.enderio.base.common.init.EIOItems;
+import com.enderio.base.common.item.misc.BrokenSpawnerItem;
 import com.enderio.core.common.recipes.OutputStack;
 import com.enderio.machines.common.init.MachineRecipes;
 import com.enderio.machines.common.menu.SoulBinderMenu;
@@ -12,6 +14,8 @@ import com.google.gson.JsonObject;
 import net.minecraft.ResourceLocationException;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -26,21 +30,22 @@ import net.minecraftforge.items.wrapper.RecipeWrapper;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
 
+import javax.json.Json;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Container> {
     private final ResourceLocation id;
-    private final Item output;
+    private final List<Item> outputs;
     private final List<Ingredient> inputs;
     private final int energy;
     private final ResourceLocation entityType;
     private final int experience;
 
-    public SoulBindingRecipe(ResourceLocation id, Item output, List<Ingredient> inputs, ResourceLocation entityType, int energy, int experience) {
+    public SoulBindingRecipe(ResourceLocation id, List<Item> outputs, List<Ingredient> inputs, ResourceLocation entityType, int energy, int experience) {
         this.id = id;
-        this.output = output;
+        this.outputs = outputs;
         this.inputs = inputs;
         this.energy = energy;
         this.entityType = entityType;
@@ -61,11 +66,14 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
 
         for (int i = 0; i < results.size(); i++) {
             int finalI = i;
-            filledSoulVial.getCapability(EIOCapabilities.ENTITY_STORAGE).ifPresent(inputEntity -> {
-                results.get(finalI).getItem().getCapability(EIOCapabilities.ENTITY_STORAGE).ifPresent(resultEntity -> {
-                    resultEntity.setStoredEntityData(inputEntity.getStoredEntityData());
+
+            if (results.get(finalI).getItem().is(EIOItems.BROKEN_SPAWNER.get())) {
+                filledSoulVial.getCapability(EIOCapabilities.ENTITY_STORAGE).ifPresent(inputEntity -> {
+                    results.get(finalI).getItem().getCapability(EIOCapabilities.ENTITY_STORAGE).ifPresent(resultEntity -> {
+                        resultEntity.setStoredEntityData(inputEntity.getStoredEntityData());
+                    });
                 });
-            });
+            }
         }
 
         return results;
@@ -73,7 +81,11 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
 
     @Override
     public List<OutputStack> getResultStacks() {
-        return List.of(OutputStack.of(new ItemStack(output, 1)));
+        List<OutputStack> guaranteedOutputs = new ArrayList<>();
+        for (Item item : outputs) {
+            guaranteedOutputs.add(OutputStack.of(new ItemStack(item, 1)));
+        }
+        return guaranteedOutputs;
     }
 
     @Override
@@ -81,7 +93,6 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
         // Test Items in Slots
         for (int i = 0; i < inputs.size(); i++) {
             if (!inputs.get(i).test(container.getItem(i))) {
-                EnderIO.LOGGER.debug("soul binding - matches - FALSE");
                 return false;
             }
         }
@@ -143,11 +154,22 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
         @Override
         public SoulBindingRecipe fromJson(ResourceLocation recipeId, JsonObject serializedRecipe) {
             EnderIO.LOGGER.info("recipeID: {}", recipeId.toString());
-            ResourceLocation id = new ResourceLocation(serializedRecipe.get("output").getAsString());
-            Item output = ForgeRegistries.ITEMS.getValue(id);
-            if (output == null) {
-                EnderIO.LOGGER.error("Soul Binding recipe {} tried to load missing item {}", recipeId, id);
-                throw new ResourceLocationException("Item not found for soul binding recipe.");
+
+            List<Item> outputs = new ArrayList<>();
+            JsonArray outputsJson = serializedRecipe.getAsJsonArray("outputs");
+            for (int i = 0; i < outputsJson.size(); i++) {
+                JsonObject obj = outputsJson.get(i).getAsJsonObject();
+
+                ResourceLocation id = new ResourceLocation(obj.get("item").getAsString());
+                Item item = ForgeRegistries.ITEMS.getValue(id);
+
+                // Check that the required item exists.
+                if (item == null) {
+                    EnderIO.LOGGER.error("Soul Binding recipe {} is missing a required output item {}", recipeId, id);
+                    throw new RuntimeException("Soul Binding recipe is missing a required output item.");
+                }
+
+                outputs.add(item);
             }
 
             List<Ingredient> inputs = new ArrayList<>();
@@ -161,7 +183,7 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
 
             ResourceLocation entityType = new ResourceLocation(serializedRecipe.get("entityType").getAsString());
 
-            return new SoulBindingRecipe(recipeId, output, inputs, entityType, energy, experience);
+            return new SoulBindingRecipe(recipeId, outputs, inputs, entityType, energy, experience);
         }
 
         @Nullable
@@ -169,11 +191,6 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
         public SoulBindingRecipe fromNetwork(ResourceLocation recipeId, FriendlyByteBuf buffer) {
             try {
                 EnderIO.LOGGER.info("fromNetwork: recipeId: {}", recipeId);
-                ResourceLocation outputId = buffer.readResourceLocation();
-                Item output = ForgeRegistries.ITEMS.getValue(outputId);
-                if (output == null) {
-                    throw new ResourceLocationException("The output of recipe " + recipeId + " does not exist.");
-                }
 
                 List<Ingredient> inputs = buffer.readCollection(ArrayList::new, Ingredient::fromNetwork);
 
@@ -182,7 +199,23 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
 
                 ResourceLocation entityType = buffer.readResourceLocation();
 
-                return new SoulBindingRecipe(recipeId, output, inputs, entityType, energy, experience);
+                List<Item> outputs = new ArrayList<>();
+                int outputCount = buffer.readInt();
+                for (int i = 0; i < outputCount; i++) {
+                    ResourceLocation id = buffer.readResourceLocation();
+
+                    Item item = ForgeRegistries.ITEMS.getValue(id);
+
+                    // Check the required items are present.
+                    if (item == null) {
+                        EnderIO.LOGGER.error("Soul Binding recipe {} is missing a required output item {}", recipeId, id);
+                        throw new RuntimeException("Soul Binding recipe is missing a required output item.");
+                    }
+
+                    outputs.add(item);
+                }
+
+                return new SoulBindingRecipe(recipeId, outputs, inputs, entityType, energy, experience);
             } catch (Exception ex) {
                 EnderIO.LOGGER.error("Error reading soul binding recipe from packet.", ex);
                 throw ex;
@@ -192,11 +225,15 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
         @Override
         public void toNetwork(FriendlyByteBuf buffer, SoulBindingRecipe recipe) {
             try {
-                buffer.writeResourceLocation(Objects.requireNonNull(ForgeRegistries.ITEMS.getKey(recipe.output)));
                 buffer.writeCollection(recipe.inputs, (buf, ing) -> ing.toNetwork(buf));
                 buffer.writeInt(recipe.energy);
                 buffer.writeInt(recipe.experience);
                 buffer.writeResourceLocation(recipe.entityType);
+
+                buffer.writeInt(recipe.outputs.size());
+                for (Item item : recipe.outputs) {
+                    buffer.writeResourceLocation(ForgeRegistries.ITEMS.getKey(item));
+                }
             } catch (Exception ex) {
                 EnderIO.LOGGER.error("Error writing soul binding recipe to packet.", ex);
                 throw ex;
