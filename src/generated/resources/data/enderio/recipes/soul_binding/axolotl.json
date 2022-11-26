@@ -11,5 +11,12 @@
       "item": "enderio:filled_soul_vial"
     }
   ],
-  "outputs": []
+  "outputs": [
+    {
+      "item": "enderio:broken_spawner"
+    },
+    {
+      "item": "enderio:empty_soul_vial"
+    }
+  ]
 }
