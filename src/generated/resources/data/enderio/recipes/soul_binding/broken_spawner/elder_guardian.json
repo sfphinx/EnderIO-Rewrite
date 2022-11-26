@@ -1,7 +1,8 @@
 {
   "type": "enderio:soul_binding",
-  "energy": 5000,
-  "entity": "minecraft:elder_guardian",
+  "energy": 100000,
+  "entityType": "minecraft:elder_guardian",
+  "experience": 10,
   "inputs": [
     {
       "item": "enderio:broken_spawner"

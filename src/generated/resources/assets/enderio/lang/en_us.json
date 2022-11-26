@@ -840,6 +840,7 @@
   "gui.enderio.redstone.always_active": "Always active",
   "gui.enderio.redstone.mode": "Redstone Mode",
   "gui.enderio.redstone.never_active": "Never active",
+  "gui.enderio.use_player_xp": "Use Player XP",
   "guidebook.enderio.book_title": "Book Title",
   "guidebook.enderio.landing_text": "Landing Text",
   "info.enderio.coordinate_selector.no_block": "No Block in Range",

@@ -1,7 +1,8 @@
 {
   "type": "enderio:soul_binding",
-  "energy": 5000,
-  "entity": "minecraft:allay",
+  "energy": 100000,
+  "entityType": "minecraft:allay",
+  "experience": 10,
   "inputs": [
     {
       "item": "enderio:broken_spawner"
