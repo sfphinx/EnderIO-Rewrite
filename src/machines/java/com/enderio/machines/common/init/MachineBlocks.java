@@ -7,6 +7,7 @@ import com.enderio.machines.common.block.MachineBlock;
 import com.enderio.machines.common.block.ProgressMachineBlock;
 import com.enderio.machines.common.blockentity.base.MachineBlockEntity;
 import com.enderio.machines.common.item.FluidTankItem;
+import com.enderio.machines.common.item.PoweredSpawnerItem;
 import com.enderio.machines.data.loot.MachinesLootTable;
 import com.enderio.machines.data.model.MachineModelUtil;
 import com.mojang.math.Vector3f;
@@ -15,7 +16,6 @@ import com.tterrag.registrate.builders.BlockBuilder;
 import com.tterrag.registrate.util.entry.BlockEntityEntry;
 import com.tterrag.registrate.util.entry.BlockEntry;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraftforge.client.model.generators.BlockModelBuilder;
 import net.minecraftforge.client.model.generators.BlockModelBuilder.RootTransformBuilder.TransformOrigin;
 import net.minecraftforge.client.model.generators.ConfiguredModel;
 import net.minecraftforge.client.model.generators.ModelFile;
@@ -126,6 +126,15 @@ public class MachineBlocks {
 
     public static final BlockEntry<ProgressMachineBlock> SOUL_BINDER = soulMachine("soul_binder", () -> MachineBlockEntities.SOUL_BINDER)
         .lang("Soul Binder")
+        .register();
+
+    public static BlockEntry<ProgressMachineBlock> POWERED_SPAWNER = REGISTRATE
+        .block("powered_spawner", props -> new ProgressMachineBlock(props, MachineBlockEntities.POWERED_SPAWNER))
+        .loot(MachinesLootTable::copyNBT)
+        .blockstate(MachineModelUtil::soulMachineBlock)
+        .item(PoweredSpawnerItem::new)
+        .tab(() -> EIOCreativeTabs.MACHINES)
+        .build()
         .register();
 
     private static BlockBuilder<ProgressMachineBlock, Registrate> standardMachine(String name, Supplier<BlockEntityEntry<? extends MachineBlockEntity>> blockEntityEntry) {

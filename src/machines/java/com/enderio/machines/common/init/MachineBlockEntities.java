@@ -40,6 +40,8 @@ public class MachineBlockEntities {
     public static final BlockEntityEntry<SoulBinderBlockEntity> SOUL_BINDER = register("soul_binder", SoulBinderBlockEntity::new,
         MachineBlocks.SOUL_BINDER);
 
+    public static final BlockEntityEntry<PoweredSpawnerBlockEntity> POWERED_SPAWNER = register("powered_spawner", PoweredSpawnerBlockEntity::new, MachineBlocks.POWERED_SPAWNER);
+
     @SafeVarargs
     private static <B extends BlockEntity> BlockEntityEntry<B> register(String name, BlockEntityBuilder.BlockEntityFactory<B> beFactory,
         NonNullSupplier<? extends Block>... blocks) {
