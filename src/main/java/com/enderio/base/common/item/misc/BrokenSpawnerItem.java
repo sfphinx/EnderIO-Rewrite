@@ -56,6 +56,11 @@ public class BrokenSpawnerItem extends Item implements IMultiCapabilityItem {
     }
 
     @Override
+    public boolean isFoil(ItemStack pStack) {
+        return pStack.getCapability(EIOCapabilities.ENTITY_STORAGE).map(m -> m.hasStoredEntity()).orElse(!Optional.empty().isEmpty());
+    }
+
+    @Override
     public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
         super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
         getEntityType(pStack).ifPresent(type -> pTooltipComponents.add(TooltipUtil.style(Component.translatable(EntityUtil.getEntityDescriptionId(type)))));

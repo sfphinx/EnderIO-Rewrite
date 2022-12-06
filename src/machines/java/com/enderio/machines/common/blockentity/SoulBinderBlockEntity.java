@@ -3,9 +3,8 @@ package com.enderio.machines.common.blockentity;
 import com.enderio.EnderIO;
 import com.enderio.api.capacitor.CapacitorModifier;
 import com.enderio.api.capacitor.QuadraticScalable;
+import com.enderio.base.common.init.EIOCapabilities;
 import com.enderio.base.common.init.EIOFluids;
-import com.enderio.base.common.item.misc.BrokenSpawnerItem;
-import com.enderio.base.common.item.tool.SoulVialItem;
 import com.enderio.base.common.tag.EIOTags;
 import com.enderio.core.common.sync.IntegerDataSlot;
 import com.enderio.core.common.sync.SyncMode;
@@ -26,7 +25,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.templates.FluidTank;
-import net.minecraftforge.items.wrapper.RecipeWrapper;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -63,26 +61,20 @@ public class SoulBinderBlockEntity extends PoweredCraftingMachine<SoulBindingRec
     public MachineInventoryLayout getInventoryLayout() {
         return MachineInventoryLayout.builder()
             .setStackLimit(1)
-            .inputSlot(this::validBrokenSpawner)
-            .inputSlot(this::validFilledSoulVial)
+            .inputSlot(this::validBoundItem)
+            .inputSlot(this::validUnboundItem)
             .setStackLimit(64)
             .outputSlot(2)
             .capacitor()
             .build();
     }
 
-    private boolean validBrokenSpawner(int slot, ItemStack stack) {
-        if (stack.getItem() instanceof BrokenSpawnerItem) {
-            return true;
-        }
-        return false;
+    private boolean validBoundItem(int slot, ItemStack stack) {
+        return stack.getCapability(EIOCapabilities.ENTITY_STORAGE).map(m -> m.hasStoredEntity()).orElse(Optional.empty().isEmpty());
     }
 
-    private boolean validFilledSoulVial(int slot, ItemStack stack) {
-        if (stack.getItem() instanceof SoulVialItem) {
-            return stack.getItem().isFoil(stack);
-        }
-        return false;
+    private boolean validUnboundItem(int slot, ItemStack stack) {
+        return stack.getCapability(EIOCapabilities.ENTITY_STORAGE).map(m -> !m.hasStoredEntity()).orElse(Optional.empty().isEmpty());
     }
 
     public FluidTank getFluidTank() {
@@ -113,13 +105,13 @@ public class SoulBinderBlockEntity extends PoweredCraftingMachine<SoulBindingRec
 
     @Override
     protected PoweredCraftingTask<SoulBindingRecipe, SoulBindingRecipe.Container> createTask(@Nullable SoulBindingRecipe recipe) {
-        return new PoweredCraftingTask<>(this, getContainer(), SoulBinderMenu.BROKEN_SPAWNER_OUTPUT_SLOT, 2, recipe) {
+        return new PoweredCraftingTask<>(this, getContainer(), SoulBinderMenu.FIRST_OUTPUT_SLOT, 2, recipe) {
             @Override
             protected void takeInputs(SoulBindingRecipe recipe) {
                 // Deduct ingredients
                 MachineInventory inv = getInventory();
-                inv.getStackInSlot(SoulBinderMenu.BROKEN_SPAWNER_INPUT_SLOT).shrink(1);
-                inv.getStackInSlot(SoulBinderMenu.FILLED_SOUL_VIAL_INPUT_SLOT).shrink(1);
+                inv.getStackInSlot(SoulBinderMenu.BOUND_ITEM_INPUT_SLOT).shrink(1);
+                inv.getStackInSlot(SoulBinderMenu.UNBOUND_ITEM_INPUT_SLOT).shrink(1);
 
                 // Deduct from Experience Bank in the Machine
                 fluidTank.drain(recipe.getExperienceCost(), IFluidHandler.FluidAction.EXECUTE);

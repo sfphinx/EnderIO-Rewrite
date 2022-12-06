@@ -4,6 +4,7 @@ import com.enderio.EnderIO;
 import com.enderio.base.common.item.EIOCreativeTabs;
 import com.enderio.core.data.model.EIOModel;
 import com.enderio.machines.common.block.MachineBlock;
+import com.enderio.machines.common.block.PoweredSpawnerBlock;
 import com.enderio.machines.common.block.ProgressMachineBlock;
 import com.enderio.machines.common.blockentity.base.MachineBlockEntity;
 import com.enderio.machines.common.item.FluidTankItem;
@@ -128,9 +129,9 @@ public class MachineBlocks {
         .lang("Soul Binder")
         .register();
 
-    public static BlockEntry<ProgressMachineBlock> POWERED_SPAWNER = REGISTRATE
-        .block("powered_spawner", props -> new ProgressMachineBlock(props, MachineBlockEntities.POWERED_SPAWNER))
-        .loot(MachinesLootTable::copyNBT)
+    public static BlockEntry<PoweredSpawnerBlock> POWERED_SPAWNER = REGISTRATE
+        .block("powered_spawner", props -> new PoweredSpawnerBlock(props, MachineBlockEntities.POWERED_SPAWNER))
+        .loot(MachinesLootTable::copyNBT) // TODO(sfphinx): add back once entity storage cap is handled by forge events
         .blockstate(MachineModelUtil::soulMachineBlock)
         .item(PoweredSpawnerItem::new)
         .tab(() -> EIOCreativeTabs.MACHINES)

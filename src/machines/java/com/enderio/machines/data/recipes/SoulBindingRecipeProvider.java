@@ -4,6 +4,7 @@ import com.enderio.EnderIO;
 import com.enderio.base.common.init.EIOItems;
 import com.enderio.base.common.util.EntityCaptureUtils;
 import com.enderio.core.data.recipes.EnderRecipeProvider;
+import com.enderio.machines.common.init.MachineBlocks;
 import com.enderio.machines.common.init.MachineRecipes;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -15,7 +16,6 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import javax.json.Json;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,15 +29,18 @@ public class SoulBindingRecipeProvider extends EnderRecipeProvider {
     @Override
     protected void buildCraftingRecipes(Consumer<FinishedRecipe> pFinishedRecipeConsumer) {
         for (ResourceLocation entity : EntityCaptureUtils.getCapturableEntities()) {
-            build(List.of(EIOItems.BROKEN_SPAWNER.get(), EIOItems.EMPTY_SOUL_VIAL.get()), List.of(
+            build(entity, "broken_spawner", List.of(EIOItems.BROKEN_SPAWNER.get(), EIOItems.EMPTY_SOUL_VIAL.get()), List.of(
                 Ingredient.of(EIOItems.BROKEN_SPAWNER.get()), Ingredient.of(EIOItems.FILLED_SOUL_VIAL.get())
-            ), entity,100000, 10, pFinishedRecipeConsumer);
+            ), 100000, 10, pFinishedRecipeConsumer);
+
+            build(entity, "powered_spawner", List.of(MachineBlocks.POWERED_SPAWNER.get().asItem()), List.of(
+                Ingredient.of(EIOItems.BROKEN_SPAWNER.get()), Ingredient.of(MachineBlocks.POWERED_SPAWNER.get().asItem())
+            ), 10000, 10, pFinishedRecipeConsumer);
         }
     }
 
-    protected void build(List<Item> outputs, List<Ingredient> inputs, ResourceLocation entity, int energy, int experience, Consumer<FinishedRecipe> finishedRecipeConsumer) {
-        // TODO: do not like the replace function being used
-        finishedRecipeConsumer.accept(new FinishedSoulBindingRecipe(EnderIO.loc("soul_binding/" + entity.getPath().replace(":", "_")), outputs, inputs, entity, energy, experience));
+    protected void build(ResourceLocation entity, String primaryItem, List<Item> outputs, List<Ingredient> inputs, int energy, int experience, Consumer<FinishedRecipe> finishedRecipeConsumer) {
+        finishedRecipeConsumer.accept(new FinishedSoulBindingRecipe(EnderIO.loc("soul_binding/" + primaryItem + "/" + entity.getPath()), outputs, inputs, entity, energy, experience));
     }
 
     protected static class FinishedSoulBindingRecipe extends EnderFinishedRecipe {

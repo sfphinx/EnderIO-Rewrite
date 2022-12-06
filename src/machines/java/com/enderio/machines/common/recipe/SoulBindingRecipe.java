@@ -3,19 +3,14 @@ package com.enderio.machines.common.recipe;
 import com.enderio.EnderIO;
 import com.enderio.api.capability.IEntityStorage;
 import com.enderio.base.common.init.EIOCapabilities;
-import com.enderio.base.common.init.EIOItems;
-import com.enderio.base.common.item.misc.BrokenSpawnerItem;
 import com.enderio.core.common.recipes.OutputStack;
 import com.enderio.machines.common.init.MachineRecipes;
 import com.enderio.machines.common.menu.SoulBinderMenu;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.ResourceLocationException;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.ItemTags;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -23,17 +18,14 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.templates.FluidTank;
 import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.wrapper.RecipeWrapper;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
 
-import javax.json.Json;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Container> {
     private final ResourceLocation id;
@@ -60,20 +52,20 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
     public int getExperienceCost() { return experience; }
 
     public List<OutputStack> craft(SoulBindingRecipe.Container container) {
-        ItemStack filledSoulVial = container.getItem(SoulBinderMenu.FILLED_SOUL_VIAL_INPUT_SLOT);
+        ItemStack boundItem = container.getItem(SoulBinderMenu.BOUND_ITEM_INPUT_SLOT);
 
         List<OutputStack> results = getResultStacks();
 
         for (int i = 0; i < results.size(); i++) {
             int finalI = i;
 
-            if (results.get(finalI).getItem().is(EIOItems.BROKEN_SPAWNER.get())) {
-                filledSoulVial.getCapability(EIOCapabilities.ENTITY_STORAGE).ifPresent(inputEntity -> {
-                    results.get(finalI).getItem().getCapability(EIOCapabilities.ENTITY_STORAGE).ifPresent(resultEntity -> {
-                        resultEntity.setStoredEntityData(inputEntity.getStoredEntityData());
-                    });
+            ItemStack finalItem = results.get(finalI).getItem();
+
+            boundItem.getCapability(EIOCapabilities.ENTITY_STORAGE).ifPresent(boundEntity -> {
+                finalItem.getCapability(EIOCapabilities.ENTITY_STORAGE).ifPresent(unboundEntity -> {
+                    unboundEntity.setStoredEntityData(boundEntity.getStoredEntityData());
                 });
-            }
+            });
         }
 
         return results;
@@ -107,7 +99,7 @@ public class SoulBindingRecipe implements MachineRecipe<SoulBindingRecipe.Contai
         */
 
 
-        LazyOptional<IEntityStorage> capability = container.getItem(SoulBinderMenu.FILLED_SOUL_VIAL_INPUT_SLOT).getCapability(EIOCapabilities.ENTITY_STORAGE);
+        LazyOptional<IEntityStorage> capability = container.getItem(SoulBinderMenu.BOUND_ITEM_INPUT_SLOT).getCapability(EIOCapabilities.ENTITY_STORAGE);
         if (!capability.isPresent()) {
             return false;
         }

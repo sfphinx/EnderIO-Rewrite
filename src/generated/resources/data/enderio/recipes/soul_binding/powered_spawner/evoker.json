@@ -1,0 +1,19 @@
+{
+  "type": "enderio:soul_binding",
+  "energy": 10000,
+  "entityType": "minecraft:evoker",
+  "experience": 10,
+  "inputs": [
+    {
+      "item": "enderio:broken_spawner"
+    },
+    {
+      "item": "enderio:powered_spawner"
+    }
+  ],
+  "outputs": [
+    {
+      "item": "enderio:powered_spawner"
+    }
+  ]
+}
