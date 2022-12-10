@@ -82,12 +82,12 @@ public class PoweredSpawnerBlockEntity extends PoweredTaskMachineEntity<SpawnTas
     @Override
     public void load(CompoundTag pTag) {
         super.load(pTag);
-        entityStorage.deserializeNBT(pTag.getCompound("entitystorage"));
+        entityStorage.deserializeNBT(pTag.getCompound("EntityStorage"));
     }
 
     @Override
     public void saveAdditional(CompoundTag pTag) {
         super.saveAdditional(pTag);
-        pTag.put("entitystorage", entityStorage.serializeNBT());
+        pTag.put("EntityStorage", entityStorage.serializeNBT());
     }
 }
